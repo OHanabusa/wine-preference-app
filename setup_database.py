@@ -94,9 +94,9 @@ def load_from_csv():
                 body = 3.0
                 sweetness = 1.0
                 
-                # Map SWEET values to numeric
-                if 'SWEET' in str(row.get('sweetness', '')):
-                    sweetness_str = str(row['sweetness'])
+                # CSVファイルでは 'sweet' という列名で甘さが保存されている
+                if 'sweet' in row.index and pd.notna(row['sweet']):
+                    sweetness_str = str(row['sweet'])
                     if 'SWEET1' in sweetness_str:
                         sweetness = 1.0
                     elif 'SWEET2' in sweetness_str:
@@ -107,9 +107,10 @@ def load_from_csv():
                         sweetness = 4.0
                     elif 'SWEET5' in sweetness_str:
                         sweetness = 5.0
+                    print(f"Processed sweetness value: {sweetness_str} -> {sweetness}")
                 
-                # Map other attributes
-                if 'ACIDITY' in str(row.get('acidity', '')):
+                # 'acidity' 列からデータを取得
+                if 'acidity' in row.index and pd.notna(row['acidity']):
                     acidity_str = str(row['acidity'])
                     if 'ACIDITY1' in acidity_str:
                         acidity = 1.0
@@ -122,7 +123,8 @@ def load_from_csv():
                     elif 'ACIDITY5' in acidity_str:
                         acidity = 5.0
                 
-                if 'BODY' in str(row.get('body', '')):
+                # 'body' 列からデータを取得
+                if 'body' in row.index and pd.notna(row['body']):
                     body_str = str(row['body'])
                     if 'BODY1' in body_str:
                         body = 1.0
@@ -135,7 +137,8 @@ def load_from_csv():
                     elif 'BODY5' in body_str:
                         body = 5.0
                 
-                if 'TANNIN' in str(row.get('tannin', '')):
+                # 'tannin' 列からデータを取得
+                if 'tannin' in row.index and pd.notna(row['tannin']):
                     tannin_str = str(row['tannin'])
                     if 'TANNIN1' in tannin_str:
                         tannin = 1.0
