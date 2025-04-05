@@ -22,8 +22,8 @@ load_dotenv()
 app = Flask(__name__)
 
 # Database configuration
-database_url = os.environ.get('DATABASE_URL', "mysql+mysqlconnector://oto:0000@localhost/wine_preferences")
 
+database_url = os.environ.get('DATABASE_URL', "mysql+mysqlconnector://oto:0000@localhost/wine_preferences")
 # Handle different database URLs depending on environment
 if database_url:
     # If using Postgres in production (common for cloud platforms)
