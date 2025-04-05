@@ -100,6 +100,7 @@ def convert_sweetness():
 
 # アプリケーション起動時に実行
 with app.app_context():
+    db.create_all()  # Make sure tables are created
     convert_sweetness()
 
 @app.route('/')
