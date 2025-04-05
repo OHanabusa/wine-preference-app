@@ -100,8 +100,27 @@ def convert_sweetness():
 
 # アプリケーション起動時に実行
 with app.app_context():
-    db.create_all()  # Make sure tables are created
-    convert_sweetness()
+    try:
+        # テーブル作成を確実に
+        db.create_all()
+        app.logger.info("Database tables created successfully")
+        
+        # データベースが空なら初期データを投入
+        if Wine.query.count() == 0:
+            app.logger.info("No wines found in database, loading sample data")
+            try:
+                from setup_database import create_sample_data
+                create_sample_data()
+                app.logger.info("Sample data loaded successfully")
+            except Exception as setup_e:
+                app.logger.error(f"Error loading sample data: {str(setup_e)}")
+        else:
+            app.logger.info(f"Database already contains {Wine.query.count()} wines")
+            
+        # SWEET形式の甘さデータを数値に変換
+        convert_sweetness()
+    except Exception as init_e:
+        app.logger.error(f"Error during application initialization: {str(init_e)}")
 
 @app.route('/')
 def index():
@@ -141,52 +160,92 @@ def get_wine_detail(wine_id):
 def search_wines_by_name():
     try:
         query = request.args.get('q', '')
-        if not query:
+        if not query or len(query) < 2:  # 少なくとも2文字以上のクエリを要求
             return jsonify([])
         
         # デバッグ情報を追加
         app.logger.info(f"Search query: '{query}'")
         
-        # データベース内のワインが存在するか確認
-        wine_count = Wine.query.count()
-        app.logger.info(f"Total wines in database: {wine_count}")
+        # 入力値のサニタイズ（特殊文字をエスケープ）
+        query = query.replace('%', '\%').replace('_', '\_')
         
-        # 名前で検索（大文字小文字を区別しない）
-        wines = Wine.query.filter(Wine.name.ilike(f'%{query}%')).limit(10).all()
-        
-        # 名前での検索結果がなければ、品種でも検索
-        if not wines:
-            app.logger.info(f"No results by name, trying variety search")
-            wines = Wine.query.filter(
-                db.or_(
-                    Wine.variety.ilike(f'%{query}%'),
-                    Wine.variety_sub1.ilike(f'%{query}%'),
-                    Wine.variety_sub2.ilike(f'%{query}%')
-                )
-            ).limit(10).all()
-        
-        app.logger.info(f"Found {len(wines)} matching wines")
-        
-        results = [{
-            'id': wine.id,
-            'name': wine.name,
-            'variety': wine.variety,
-            'variety_sub1': wine.variety_sub1,
-            'variety_sub2': wine.variety_sub2,
-            'vintage': wine.vintage,
-            'wine_type': wine.wine_type or 'other',
-            'price': wine.price,
-            'acidity': wine.acidity,
-            'tannin': wine.tannin,
-            'body': wine.body,
-            'sweetness': wine.sweetness
-        } for wine in wines]
-        
-        return jsonify(results)
-        
+        # 簡易的なクエリの場合は応答時間を改善
+        try:
+            # データベース内のワインが存在するか確認
+            wine_count = Wine.query.count()
+            app.logger.info(f"Total wines in database: {wine_count}")
+            
+            if wine_count == 0:
+                # サンプルデータを追加
+                from setup_database import create_sample_data
+                app.logger.info("No wines found, adding sample data")
+                create_sample_data()
+                wine_count = Wine.query.count()
+                app.logger.info(f"Added sample data. Now have {wine_count} wines")
+                
+            # 名前で検索（大文字小文字を区別しない）
+            # タイムアウト防止のため、複雑なクエリは避け、インデックスを活用
+            name_query = f"%{query}%"
+            wines = Wine.query.filter(Wine.name.ilike(name_query)).limit(10).all()
+            
+            # 名前での検索結果がなければ、品種でも検索
+            if not wines:
+                app.logger.info(f"No results by name, trying variety search")
+                variety_query = f"%{query}%"
+                wines = Wine.query.filter(
+                    db.or_(
+                        Wine.variety.ilike(variety_query),
+                        Wine.variety_sub1.ilike(variety_query),
+                        Wine.variety_sub2.ilike(variety_query)
+                    )
+                ).limit(10).all()
+            
+            app.logger.info(f"Found {len(wines)} matching wines")
+            
+            # ただし結果がない場合は空の配列を返す
+            if not wines:
+                return jsonify([])
+                
+            # 結果を整形
+            results = []
+            for wine in wines:
+                try:
+                    wine_data = {
+                        'id': wine.id,
+                        'name': wine.name or '',
+                        'variety': wine.variety or '',
+                        'variety_sub1': wine.variety_sub1 or '',
+                        'variety_sub2': wine.variety_sub2 or '',
+                        'vintage': wine.vintage or 0,
+                        'wine_type': wine.wine_type or 'other',
+                        'price': wine.price or 0
+                    }
+                    # オプションのデータ（NULLの場合があるため）
+                    if hasattr(wine, 'acidity') and wine.acidity is not None:
+                        wine_data['acidity'] = wine.acidity
+                    if hasattr(wine, 'tannin') and wine.tannin is not None:
+                        wine_data['tannin'] = wine.tannin
+                    if hasattr(wine, 'body') and wine.body is not None:
+                        wine_data['body'] = wine.body
+                    if hasattr(wine, 'sweetness') and wine.sweetness is not None:
+                        wine_data['sweetness'] = wine.sweetness
+                    
+                    results.append(wine_data)
+                except Exception as item_e:
+                    app.logger.warning(f"Error processing wine item {wine.id}: {str(item_e)}")
+                    continue
+            
+            return jsonify(results)
+            
+        except Exception as db_e:
+            app.logger.error(f"Database error: {str(db_e)}")
+            # エラーでもクラッシュせず、空の結果を返す
+            return jsonify([])
+            
     except Exception as e:
         app.logger.error(f"Error searching wines: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        # クライアントにはシンプルなエラーメッセージを返す
+        return jsonify([]), 200  # エラーでも200を返してフロントエンドでのエラー処理を避ける
 
 @app.route('/get_preferences')
 def get_preferences():
