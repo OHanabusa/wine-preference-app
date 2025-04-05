@@ -63,6 +63,7 @@ class UserPreference(db.Model):
     wine_id = db.Column(db.Integer, db.ForeignKey('wine.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     rated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    device_id = db.Column(db.String(100), nullable=True)  # デバイスIDを保存するフィールド
     wine = db.relationship('Wine', backref=db.backref('preferences', lazy=True))
 
 def convert_sweetness():
@@ -250,7 +251,10 @@ def search_wines_by_name():
 @app.route('/get_preferences')
 def get_preferences():
     try:
-        # ユーザーの評価履歴を取得
+        # リクエストからデバイスIDを取得（なければ'unknown'）
+        device_id = request.args.get('device_id', 'unknown')
+        
+        # ユーザーの評価履歴を取得（デバイスIDでフィルタリング）
         rated_wines = []
         preferences = {
             'acidity': 0,
@@ -260,7 +264,7 @@ def get_preferences():
             'total_weight': 0  # 重みの合計を追加
         }
         
-        ratings = UserPreference.query.order_by(UserPreference.rated_at.desc()).all()
+        ratings = UserPreference.query.filter_by(device_id=device_id).order_by(UserPreference.rated_at.desc()).all()
         
         for rating in ratings:
             wine = Wine.query.get(rating.wine_id)
@@ -369,8 +373,11 @@ def calculate_variety_similarity(user_wines, target_wine):
 @app.route('/get_recommendations')
 def get_recommendations():
     try:
-        # ユーザーの好みを取得
-        user_preferences = UserPreference.query.join(Wine).all()
+        # リクエストからデバイスIDを取得
+        device_id = request.args.get('device_id', 'unknown')
+        
+        # デバイスIDでフィルタリングしたユーザーの好みを取得
+        user_preferences = UserPreference.query.filter_by(device_id=device_id).join(Wine).all()
         
         if not user_preferences:
             return jsonify({
@@ -498,7 +505,11 @@ def get_recommendations():
 @app.route('/get_rated_wines')
 def get_rated_wines():
     try:
-        ratings = UserPreference.query.order_by(UserPreference.rated_at.desc()).all()
+        # リクエストからデバイスIDを取得（なければ'unknown'）
+        device_id = request.args.get('device_id', 'unknown')
+        
+        # 指定されたデバイスIDのみの評価履歴を取得
+        ratings = UserPreference.query.filter_by(device_id=device_id).order_by(UserPreference.rated_at.desc()).all()
         rated_wines = []
         
         for rating in ratings:
@@ -514,7 +525,8 @@ def get_rated_wines():
                     'wine_type': wine.wine_type or 'other',
                     'price': wine.price,
                     'rating': rating.rating,
-                    'rated_at': rating.rated_at.isoformat()
+                    'rated_at': rating.rated_at.isoformat(),
+                    'device_id': rating.device_id
                 })
         
         return jsonify(rated_wines)
@@ -533,8 +545,11 @@ def rate_wine():
         if not wine_id or not rating:
             return jsonify({'error': '必要なパラメータが不足しています'}), 400
 
-        # 既存の評価を確認
-        existing_rating = UserPreference.query.filter_by(wine_id=wine_id).first()
+        # リクエストからデバイスIDを取得（なければ'unknown'）
+        device_id = data.get('device_id', 'unknown')
+        
+        # 既存の評価を確認（デバイスIDでフィルタリング）
+        existing_rating = UserPreference.query.filter_by(wine_id=wine_id, device_id=device_id).first()
         if existing_rating:
             # 既存の評価を更新
             existing_rating.rating = rating
@@ -544,7 +559,8 @@ def rate_wine():
             new_rating = UserPreference(
                 wine_id=wine_id,
                 rating=rating,
-                rated_at=datetime.utcnow()
+                rated_at=datetime.utcnow(),
+                device_id=device_id
             )
             db.session.add(new_rating)
 
@@ -592,7 +608,11 @@ def update_sweetness():
 @app.route('/delete_rating/<int:wine_id>', methods=['DELETE'])
 def delete_rating(wine_id):
     try:
-        rating = UserPreference.query.filter_by(wine_id=wine_id).first()
+        # リクエストからデバイスIDを取得
+        device_id = request.args.get('device_id', 'unknown')
+        
+        # デバイスIDでフィルタリングした評価を取得
+        rating = UserPreference.query.filter_by(wine_id=wine_id, device_id=device_id).first()
         if rating:
             db.session.delete(rating)
             db.session.commit()
