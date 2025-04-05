@@ -316,28 +316,32 @@ def add_preference():
         wine_id = data.get('wine_id')
         rating = data.get('rating')
         
-        app.logger.info(f"Received preference data: wine_id={wine_id}, rating={rating}")
+        # デバイスIDを取得
+        device_id = data.get('device_id', 'unknown')
+        
+        app.logger.info(f"Received preference data: wine_id={wine_id}, rating={rating}, device_id={device_id}")
         
         if not wine_id or not rating:
             app.logger.error("Missing wine_id or rating")
             return jsonify({'error': 'Missing wine_id or rating'}), 400
         
-        # 既存の評価を確認
-        existing_preference = UserPreference.query.filter_by(wine_id=wine_id).first()
+        # 既存の評価を確認（デバイスIDでフィルタリング）
+        existing_preference = UserPreference.query.filter_by(wine_id=wine_id, device_id=device_id).first()
         if existing_preference:
-            app.logger.info(f"Updating existing preference for wine_id={wine_id}")
+            app.logger.info(f"Updating existing preference for wine_id={wine_id}, device_id={device_id}")
             existing_preference.rating = rating
             existing_preference.rated_at = datetime.utcnow()
         else:
-            app.logger.info(f"Creating new preference for wine_id={wine_id}")
-            preference = UserPreference(wine_id=wine_id, rating=rating, rated_at=datetime.utcnow())
+            app.logger.info(f"Creating new preference for wine_id={wine_id}, device_id={device_id}")
+            preference = UserPreference(wine_id=wine_id, rating=rating, rated_at=datetime.utcnow(), device_id=device_id)
             db.session.add(preference)
         
         db.session.commit()
         app.logger.info("Preference saved successfully")
 
         # 更新された好みと評価済みワインを返す
-        return get_preferences()
+        # get_preferencesエンドポイントを直接呼び出すのではなく、成功メッセージを返す
+        return jsonify({'success': True, 'message': 'Preference saved successfully', 'device_id': device_id})
 
     except Exception as e:
         app.logger.error(f"Error saving preference: {str(e)}")
