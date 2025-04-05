@@ -9,7 +9,8 @@ import os
 
 def load_from_csv():
     """Load wine data from the wine_info.csv file"""
-    csv_path = '/Users/oto/CascadeProjects/windsurf-project/archive/wine_info.csv'
+    # プロジェクトディレクトリ内のCSVファイルを使用
+    csv_path = os.path.join(os.path.dirname(__file__), 'wine_info.csv')
     
     # For deployment, we need to check if the file exists in the deployment environment
     if not os.path.exists(csv_path):
