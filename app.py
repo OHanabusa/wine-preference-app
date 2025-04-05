@@ -167,7 +167,7 @@ def search_wines_by_name():
         app.logger.info(f"Search query: '{query}'")
         
         # 入力値のサニタイズ（特殊文字をエスケープ）
-        query = query.replace('%', '\%').replace('_', '\_')
+        query = query.replace('%', '\\%').replace('_', '\\_')
         
         # 簡易的なクエリの場合は応答時間を改善
         try:
