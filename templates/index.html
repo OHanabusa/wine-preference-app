@@ -948,12 +948,27 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // デバイスID管理関数
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('wine_app_device_id');
+            if (!deviceId) {
+                deviceId = 'device_' + Date.now();
+                localStorage.setItem('wine_app_device_id', deviceId);
+                console.log('新しいデバイスIDを生成しました:', deviceId);
+            }
+            return deviceId;
+        }
+        
         let selectedRating = 0;
         let preferencesChart = null;
         let selectedWineChart = null;
 
         // DOMContentLoaded時の処理
         document.addEventListener('DOMContentLoaded', async () => {
+            // デバイスIDの初期化
+            const deviceId = getDeviceId();
+            console.log('現在のデバイスID:', deviceId);
+            
             const searchInput = document.getElementById('wineSearch');
             if (searchInput) {
                 searchInput.addEventListener('input', debounceSearch);
@@ -1380,7 +1395,8 @@
         // 好みとレコメンデーションの読み込み
         async function loadPreferences() {
             try {
-                const response = await fetch('/get_preferences');
+                const deviceId = getDeviceId();
+                const response = await fetch(`/get_preferences?device_id=${deviceId}`);
                 if (!response.ok) {
                     throw new Error('好みの取得に失敗しました');
                 }
@@ -1399,7 +1415,8 @@
         // レコメンデーションの読み込み
         async function loadRecommendations() {
             try {
-                const response = await fetch('/get_recommendations');
+                const deviceId = getDeviceId();
+                const response = await fetch(`/get_recommendations?device_id=${deviceId}`);
                 if (response.ok) {
                     const data = await response.json();
                     displayRecommendations(data);
@@ -1414,7 +1431,8 @@
         // 評価済みワインの読み込み
         async function loadRatedWines() {
             try {
-                const response = await fetch('/get_rated_wines');
+                const deviceId = getDeviceId();
+                const response = await fetch(`/get_rated_wines?device_id=${deviceId}`);
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || '評価済みワインの取得に失敗しました');
@@ -1505,6 +1523,7 @@
             }
 
             try {
+                const deviceId = getDeviceId();
                 const response = await fetch('/rate_wine', {
                     method: 'POST',
                     headers: {
@@ -1512,7 +1531,8 @@
                     },
                     body: JSON.stringify({
                         wine_id: parseInt(wineId),
-                        rating: selectedRating
+                        rating: selectedRating,
+                        device_id: deviceId
                     })
                 });
 
@@ -1564,7 +1584,8 @@
             }
 
             try {
-                const response = await fetch(`/delete_rating/${wineId}`, {
+                const deviceId = getDeviceId();
+                const response = await fetch(`/delete_rating/${wineId}?device_id=${deviceId}`, {
                     method: 'DELETE'
                 });
 
