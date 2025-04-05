@@ -1,6 +1,6 @@
 # ワイン好み分析アプリケーション
 
-このアプリケーションは、ユーザーのワイン評価に基づいて好みを分析し、おすすめのワインを提案するWebアプリケーションです。
+このアプリケーションは、ユーザーのワイン評価に基づいて好みを分析し、おすすめのワインを提案するWebアプリケーションです。CSVファイルから様々な種類のワインデータを自動的にロードし、ユーザーの好みに基づいたレコメンデーションを提供します。
 
 ## 機能
 
@@ -14,8 +14,9 @@
 
 - Backend: Python (Flask)
 - Frontend: HTML, JavaScript, Bootstrap
-- Database: MySQL
-- 分析: scikit-learn
+- Database: PostgreSQL（本番環境）/ SQLite（開発環境）
+- 分析: scikit-learn, Pandas
+- デプロイ: Render
 
 ## セットアップ
 
@@ -35,29 +36,29 @@ pip install flask-migrate
 
 ### 2. データベース設定
 
-1. MySQLにデータベースを作成
-```sql
-CREATE DATABASE wine_preference_db;
+#### 開発環境（SQLite）
+`.env`ファイルを作成し、以下の環境変数を設定
+```
+DATABASE_URL=sqlite:///wineapp.db
 ```
 
-2. `.env`ファイルを作成し、以下の環境変数を設定
+#### 本番環境（PostgreSQL）
+Renderなどのホスティングサービスで自動的に`DATABASE_URL`環境変数が設定されます。
 ```
-MYSQL_HOST=localhost
-MYSQL_USER=your_username
-MYSQL_PASSWORD=your_password
-MYSQL_DB=wine_preference_db
+DATABASE_URL=postgresql://username:password@host:port/database_name
 ```
 
 ### 3. データベースの初期化
 
 ```bash
-# マイグレーションとは、データベースのスキーマ変更や移行を行うためのプロセスです。
-# ここでは、Flask-Migrateを使用してデータベースのマイグレーションを行います。
-flask db upgrade
-
-# ワインデータのインポート
-python import_data.py
+# データベースの初期化と初期データのロード
+python initialize_db.py
 ```
+
+このコマンドは以下の処理を実行します：
+1. データベーステーブルの作成
+2. CSVファイルからワインデータのロード
+3. サンプルユーザーと好み設定の作成
 
 ## 起動方法
 
@@ -78,59 +79,76 @@ kill 1234
 
 ## データの管理
 
-### ワインデータの追加・更新
+### ワインデータのCSVインポート
 
-ワインデータは`wine_info.csv`ファイルで管理されています。以下の列が必要です：
+ワインデータは`/Users/oto/CascadeProjects/windsurf-project/archive/wine_info.csv`ファイルから自動的にロードされます。CSVファイルには以下の列が必要です：
 
 - name: ワイン名
+- producer: 生産者
 - variety: 主要品種
 - variety_sub1: 副品種1（オプション）
 - variety_sub2: 副品種2（オプション）
 - price: 価格
 - vintage: 製造年
 - wine_type: ワインタイプ（red/white/rose/sparkling）
-- acidity: 酸味（1-5）
-- tannin: タンニン（1-5）
-- body: ボディ（1-5）
-- sweetness: 甘み（1-5）
+- acidity: 酸味（ACIDITY1～ACIDITY5）
+- tannin: タンニン（TANNIN1～TANNIN5）
+- body: ボディ（BODY1～BODY5）
+- sweetness: 甘み（SWEET1～SWEET5）
 
-CSVファイルを更新後、`import_data.py`を実行してデータベースを更新します：
+### ワインデータのバランス
+
+CSVからのデータロード時、以下のバランスでワインを取得します：
+- 赤ワイン: 最大1000本
+- 白ワイン: 最大500本
+- スパークリングワイン: 最大200本
+- ロゼワイン: 最大100本
+- その他のワイン: 最大200本
+
+これにより、様々な種類のワインがバランスよくデータベースに登録されます。
+
+### データベースの更新
+
+データベースを手動で更新するには以下のコマンドを実行します：
 
 ```bash
-python import_data.py
+python initialize_db.py
 ```
 
 ### データベースのリセット
 
 データベースをリセットする場合は以下の手順を実行します：
 
-1. データベースの削除
-```sql
-DROP DATABASE wine_preference_db;
-CREATE DATABASE wine_preference_db;
+#### 開発環境（SQLite）
+1. データベースファイルの削除
+```bash
+rm wineapp.db
 ```
 
-2. マイグレーションの実行
+2. データベースの再初期化
 ```bash
-flask db upgrade
+python initialize_db.py
 ```
 
-3. データのインポート
-```bash
-python import_data.py
-```
+#### 本番環境（PostgreSQL）
+Renderダッシュボードから：
+1. PostgreSQLデータベースサービスをリセット
+2. アプリケーションを再デプロイ
 
 ## SQLによるデータ操作
 
-### MySQLへの接続
+### PostgreSQL/SQLiteへの接続
 
+#### PostgreSQL（本番環境）
 ```bash
-# MySQLに接続
-mysql -u oto -p
-# パスワードを入力
+# PostgreSQLに接続（Renderダッシュボードから接続情報を取得）
+psql postgresql://username:password@host:port/database_name
+```
 
-# データベースの選択
-USE wine_preferences;
+#### SQLite（開発環境）
+```bash
+# SQLiteに接続
+sqlite3 wineapp.db
 ```
 
 ### 基本的なデータ検索
