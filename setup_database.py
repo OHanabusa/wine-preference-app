@@ -33,11 +33,39 @@ def load_from_csv():
         # Convert dataframe rows to Wine objects
         for _, row in df.iterrows():
             try:
-                # Extract data from row
-                name = row['name'] if 'name' in row and pd.notna(row['name']) else ''
-                variety = row[3] if len(row) > 3 and pd.notna(row[3]) else ''
-                variety_sub1 = row[4] if len(row) > 4 and pd.notna(row[4]) else ''
-                variety_sub2 = row[5] if len(row) > 5 and pd.notna(row[5]) else ''
+                # Extract wine name and clean up Korean text
+                name = ''
+                if 'name' in row and pd.notna(row['name']):
+                    # ワイン名から韓国語パートを除去（通常は最初の部分）
+                    raw_name = str(row['name'])
+                    # 韓国語とそれ以外のパートを分離
+                    parts = raw_name.split(',')
+                    if len(parts) > 1:
+                        # カンマで区切られている場合は2番目の部分を使用
+                        name = parts[1].strip()
+                    else:
+                        name = raw_name
+                    
+                # 品種情報のクリーンアップと抽出
+                variety = ''
+                variety_sub1 = ''
+                variety_sub2 = ''
+                
+                # カラムの位置ではなく名前で品種を特定
+                if 'variety' in row.index and pd.notna(row['variety']):
+                    variety = str(row['variety'])
+                elif len(row) > 8 and pd.notna(row[8]):
+                    variety = str(row[8])
+                    
+                if 'variety_sub1' in row.index and pd.notna(row['variety_sub1']):
+                    variety_sub1 = str(row['variety_sub1'])
+                elif len(row) > 9 and pd.notna(row[9]):
+                    variety_sub1 = str(row[9])
+                    
+                if 'variety_sub2' in row.index and pd.notna(row['variety_sub2']):
+                    variety_sub2 = str(row['variety_sub2'])
+                elif len(row) > 10 and pd.notna(row[10]):
+                    variety_sub2 = str(row[10])
                 
                 # Extract vintage as integer
                 vintage = 0
@@ -119,6 +147,20 @@ def load_from_csv():
                         tannin = 4.0
                     elif 'TANNIN5' in tannin_str:
                         tannin = 5.0
+                
+                # 韓国語を含む行は除外するチェック
+                if name.strip() == '' or any(ord(c) > 0xAC00 and ord(c) < 0xD7A4 for c in name):
+                    # 空の名前または韓国語文字を含む場合はスキップ
+                    continue
+                    
+                # 品種名もクリーンアップ
+                def clean_text(text):
+                    # 韓国語の範囲はU+AC00-U+D7A3
+                    return ''.join([c for c in text if not (ord(c) > 0xAC00 and ord(c) < 0xD7A4)])
+                
+                variety = clean_text(variety)
+                variety_sub1 = clean_text(variety_sub1)
+                variety_sub2 = clean_text(variety_sub2)
                 
                 # Create Wine object
                 wine = Wine(
