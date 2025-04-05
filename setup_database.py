@@ -5,8 +5,8 @@ This script explicitly creates tables and sample data.
 from app import app, db, Wine, UserPreference
 from datetime import datetime
 
-def setup_database():
-    """Set up the database from scratch with explicit table creation."""
+def create_sample_data():
+    """Set up the database with sample data for deployment and testing."""
     with app.app_context():
         print("Dropping all tables to ensure clean setup...")
         db.drop_all()
@@ -87,4 +87,4 @@ def setup_database():
         print("Database setup complete with sample data!")
 
 if __name__ == "__main__":
-    setup_database()
+    create_sample_data()
