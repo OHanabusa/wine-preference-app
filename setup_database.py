@@ -129,7 +129,7 @@ def load_from_csv():
                         sweetness = 4.0
                     elif 'SWEET5' in sweetness_str:
                         sweetness = 5.0
-                    print(f"Processed sweetness value: {sweetness_str} -> {sweetness}")
+                    # print(f"Processed sweetness value: {sweetness_str} -> {sweetness}")
                 
                 # 'acidity' 列からデータを取得
                 if 'acidity' in row.index and pd.notna(row['acidity']):
