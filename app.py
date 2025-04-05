@@ -144,10 +144,30 @@ def search_wines_by_name():
         if not query:
             return jsonify([])
         
-        # 名前で検索
-        wines = Wine.query.filter(Wine.name.like(f'%{query}%')).limit(10).all()
+        # デバッグ情報を追加
+        app.logger.info(f"Search query: '{query}'")
         
-        return jsonify([{
+        # データベース内のワインが存在するか確認
+        wine_count = Wine.query.count()
+        app.logger.info(f"Total wines in database: {wine_count}")
+        
+        # 名前で検索（大文字小文字を区別しない）
+        wines = Wine.query.filter(Wine.name.ilike(f'%{query}%')).limit(10).all()
+        
+        # 名前での検索結果がなければ、品種でも検索
+        if not wines:
+            app.logger.info(f"No results by name, trying variety search")
+            wines = Wine.query.filter(
+                db.or_(
+                    Wine.variety.ilike(f'%{query}%'),
+                    Wine.variety_sub1.ilike(f'%{query}%'),
+                    Wine.variety_sub2.ilike(f'%{query}%')
+                )
+            ).limit(10).all()
+        
+        app.logger.info(f"Found {len(wines)} matching wines")
+        
+        results = [{
             'id': wine.id,
             'name': wine.name,
             'variety': wine.variety,
@@ -160,10 +180,12 @@ def search_wines_by_name():
             'tannin': wine.tannin,
             'body': wine.body,
             'sweetness': wine.sweetness
-        } for wine in wines])
+        } for wine in wines]
+        
+        return jsonify(results)
         
     except Exception as e:
-        print(f"Error searching wines: {str(e)}")
+        app.logger.error(f"Error searching wines: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get_preferences')
