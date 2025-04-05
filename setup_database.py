@@ -210,7 +210,7 @@ def create_sample_data():
         
         # If CSV loading failed, use sample data
         if not csv_loaded:
-            print("Adding sample wine data...")
+            print("CSV loading failed. Adding sample wine data...")
             # Create sample wine data based on real entries from wine_info.csv
             sample_wines = [
             # Japanese wines
@@ -262,10 +262,11 @@ def create_sample_data():
                  wine_type="sparkling", price=7500, acidity=4.2, tannin=1.0, body=2.5, sweetness=1.5),
             Wine(name="ペンフォールズ グランジ 2017", variety="Shiraz", vintage=2017, 
                  wine_type="red", price=98000, acidity=3.5, tannin=4.5, body=5.0, sweetness=1.0),
-        ]
-        
-        for wine in sample_wines:
-            db.session.add(wine)
+            ]
+            
+            # サンプルデータのワインをデータベースに追加
+            for wine in sample_wines:
+                db.session.add(wine)
         
         # Create some sample user preferences
         print("Adding sample user preferences...")
