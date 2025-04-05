@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: wine-preference-app
+    env: python
+    buildCommand: pip install -r requirements.txt && python initialize_db.py
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wine-preference-db
+          property: connectionString
+
+databases:
+  - name: wine-preference-db
+    databaseName: wine_preferences
+    plan: free

@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ワイン好み分析</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        .rated-wines-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .rated-wine-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .rated-wine-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .rated-wine-card .rating {
+            color: #ffd700;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        .rated-wine-card .rated-at {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .stars {
+            font-size: 24px;
+            color: #ffd700;
+            cursor: pointer;
+        }
+        .star {
+            margin-right: 5px;
+        }
+        .star:hover {
+            color: #ffed4a;
+        }
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .search-result {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result:hover {
+            background-color: #f8f9fa;
+        }
+        .search-result:last-child {
+            border-bottom: none;
+        }
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 15px;
+        }
+        .recommendation-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .recommendation-card h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+        .recommendation-card .wine-info {
+            margin-bottom: 15px;
+            color: #666;
+        }
+        .recommendation-card .wine-chart-container {
+            margin: 15px 0;
+            height: 200px;
+        }
+        .recommendation-card .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .recommendation-card .similarity-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .wine-chart-container {
+            width: 100%;
+            height: 200px;
+            margin-top: 10px;
+        }
+        .rating {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .rating .star {
+            color: #ddd;
+            transition: color 0.2s;
+        }
+        .rating .star.selected {
+            color: #ffd700;
+        }
+        .search-container {
+            position: relative;
+        }
+        .rated-wines-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .rated-wine-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .rated-wine-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        .rated-wine-card .rating {
+            color: #ffd700;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        .rated-wine-card .rated-at {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .wine-chart-container {
+            height: 200px;
+            margin-top: 15px;
+        }
+        .rated-wine-card .text-muted {
+            color: #666;
+            margin: 0;
+        }
+        #preferencesChart {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        .stars {
+            font-size: 24px;
+            color: #ffd700;
+            cursor: pointer;
+        }
+        .star {
+            margin-right: 5px;
+        }
+        .star:hover {
+            color: #ffed4a;
+        }
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .search-result {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .search-result:hover {
+            background-color: #f8f9fa;
+        }
+        .search-result:last-child {
+            border-bottom: none;
+        }
+        .no-results, .error-message {
+            padding: 8px 12px;
+            color: #666;
+            font-style: italic;
+        }
+        .error-message {
+            color: #dc3545;
+        }
+
+        /* ワインタイプ別の背景色 */
+        .wine-type-red {
+            background: linear-gradient(135deg, #fff 0%, #ffefef 100%);
+            border-color: #ffcdd2;
+        }
+        
+        .wine-type-white {
+            background: linear-gradient(135deg, #fff 0%, #fff8e1 100%);
+            border-color: #ffe0b2;
+        }
+        
+        .wine-type-rose {
+            background: linear-gradient(135deg, #fff 0%, #fce4ec 100%);
+            border-color: #f8bbd0;
+        }
+        
+        .wine-type-sparkling {
+            background: linear-gradient(135deg, #fff 0%, #e8f5e9 100%);
+            border-color: #c8e6c9;
+        }
+
+        .wine-type-other {
+            background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
+            border-color: #e0e0e0;
+        }
+
+        /* ワインタイプのバッジ */
+        .wine-type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-bottom: 8px;
+        }
+
+        .wine-type-badge.red {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .wine-type-badge.white {
+            background-color: #fff8e1;
+            color: #f9a825;
+        }
+
+        .wine-type-badge.rose {
+            background-color: #fce4ec;
+            color: #c2185b;
+        }
+
+        .wine-type-badge.sparkling {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .wine-type-badge.other {
+            background-color: #f5f5f5;
+            color: #616161;
+        }
+
+        /* 検索結果のスタイル */
+        .search-result {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .search-result:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .wine-name {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .wine-details {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .vintage-badge {
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .variety-badge {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+
+        /* 選択したワインのスタイル */
+        .selected-wine-card {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .vintage-info {
+            margin: 10px 0;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .wine-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .feature {
+            text-align: center;
+        }
+
+        .feature label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .feature-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* バッジのコンテナ */
+        .wine-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+
+        /* ヴィンテージバッジ */
+        .vintage-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .wine-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .wine-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .wine-card h5 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .wine-card .wine-info {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .wine-card .wine-info div {
+            margin-bottom: 5px;
+        }
+
+        /* レコメンデーションセクション */
+        .recommendations-section {
+            margin-top: 40px;
+        }
+
+        .wine-type-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .wine-type-section h4 {
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .recommendations {
+            display: flex;
+            flex-direction: row;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0;
+        }
+
+        .recommendation-type {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .wine-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .wine-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .wine-chart-container {
+            height: 200px;
+            margin: 1rem 0;
+        }
+
+        .wine-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .wine-type-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .wine-type-badge.red {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .wine-type-badge.white {
+            background-color: #fff8e1;
+            color: #f9a825;
+        }
+
+        .wine-type-badge.sparkling {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .wine-type-badge.other {
+            background-color: #f5f5f5;
+            color: #616161;
+        }
+
+        .vintage-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        /* ワインタイプごとの背景色 */
+        .wine-type-section.red {
+            background-color: rgba(220, 100, 100, 0.1);
+            border-left: 4px solid #dc6464;
+        }
+        
+        .wine-type-section.white {
+            background-color: rgba(255, 223, 128, 0.1);
+            border-left: 4px solid #ffdf80;
+        }
+        
+        .wine-type-section.sparkling {
+            background-color: rgba(173, 216, 230, 0.1);
+            border-left: 4px solid #add8e6;
+        }
+        
+        .wine-type-section.other {
+            background-color: rgba(169, 169, 169, 0.1);
+            border-left: 4px solid #a9a9a9;
+        }
+
+        .wine-card {
+            margin-bottom: 15px;
+        }
+
+        .wine-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .feature {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .wine-chart-container {
+            height: 200px;
+            margin: 15px 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .button-group .btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.9em;
+        }
+        
+        .wine-varieties {
+            color: #2c5282;
+            font-weight: 500;
+        }
+
+        /* レイアウトを改善 */
+        #recommendations {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .recommendation-type {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .wine-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .wine-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wine-chart-container {
+            height: 200px;
+            margin: 1rem 0;
+            flex-grow: 1;
+        }
+
+        .wine-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .wine-info {
+            margin: 1rem 0;
+        }
+
+        .wine-type-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .wine-type-badge.red {
+            background-color: rgba(220, 100, 100, 0.2);
+            color: #dc6464;
+        }
+
+        .wine-type-badge.white {
+            background-color: rgba(255, 223, 128, 0.2);
+            color: #b39a3d;
+        }
+
+        .wine-type-badge.sparkling {
+            background-color: rgba(173, 216, 230, 0.2);
+            color: #4d7c8a;
+        }
+
+        .wine-type-badge.other {
+            background-color: rgba(169, 169, 169, 0.2);
+            color: #696969;
+        }
+
+        .vintage-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+
+        .button-group button {
+            flex: 1;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            #recommendations {
+                flex-direction: column;
+            }
+
+            .recommendation-type {
+                width: 100%;
+            }
+
+            .wine-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* レコメンドされたワインのスタイル */
+        #recommendations {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            overflow-x: auto;
+            min-height: 600px;
+        }
+
+        .recommendation-type {
+            flex: 1;
+            min-width: 240px;
+            max-width: 280px;
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .recommendation-type.red {
+            background-color: rgba(220, 100, 100, 0.05);
+            border: 2px solid rgba(220, 100, 100, 0.2);
+        }
+
+        .recommendation-type.white {
+            background-color: rgba(255, 223, 128, 0.05);
+            border: 2px solid rgba(255, 223, 128, 0.2);
+        }
+
+        .recommendation-type.sparkling {
+            background-color: rgba(173, 216, 230, 0.05);
+            border: 2px solid rgba(173, 216, 230, 0.2);
+        }
+
+        .recommendation-type.other {
+            background-color: rgba(169, 169, 169, 0.05);
+            border: 2px solid rgba(169, 169, 169, 0.2);
+        }
+
+        .recommendation-type h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .wine-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .wine-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 1rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wine-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .wine-info {
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+
+        .wine-chart-container {
+            height: 180px;
+            margin: 0.5rem 0;
+            flex-grow: 1;
+        }
+
+        .wine-badges {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .wine-type-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+
+        .button-group button {
+            flex: 1;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            padding: 0.375rem 0.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            #recommendations {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .recommendation-type {
+                flex: 0 1 calc(50% - 1rem);
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #recommendations {
+                flex-direction: column;
+            }
+
+            .recommendation-type {
+                width: 100%;
+                max-width: none;
+            }
+        }
+
+        /* 星評価のスタイル */
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            font-size: 2em;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating label {
+            color: #ddd;
+            cursor: pointer;
+            padding: 0 0.1em;
+            transition: color 0.2s;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: #ffd700;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover ~ label {
+            color: #ffed4a;
+        }
+
+        /* 評価フォームのスタイル */
+        #ratingForm .card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #ratingForm .card-title {
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .selected-wine-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>あなたの好み</h3>
+                        <div class="chart-container">
+                            <canvas id="preferencesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>評価履歴</h3>
+                        <div id="ratedWinesList" class="rated-wines-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>ワインを評価する</h2>
+        
+        <!-- ワイン検索フォーム -->
+        <div class="mb-4">
+            <label for="wineSearch" class="form-label">ワインを検索：</label>
+            <input type="text" id="wineSearch" class="form-control" placeholder="ワイン名を入力">
+            <div id="searchResults" class="mt-2"></div>
+        </div>
+
+        <!-- 評価セクション -->
+        <div class="row">
+            <div class="col-md-6">
+                <!-- 選択されたワインの情報 -->
+                <div id="selectedWineInfo">
+                    <p class="text-muted">評価するワインを選択してください</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <!-- 評価フォーム -->
+                <div id="ratingForm" style="display: none;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">評価を入力</h4>
+                            <input type="hidden" id="selectedWineId" value="">
+                            
+                            <!-- 星評価 -->
+                            <div class="mb-4">
+                                <label class="form-label">評価</label>
+                                <div class="star-rating">
+                                    <input type="radio" id="star5" name="rating" value="5" onclick="setRating(5)">
+                                    <label for="star5" title="5">★</label>
+                                    <input type="radio" id="star4" name="rating" value="4" onclick="setRating(4)">
+                                    <label for="star4" title="4">★</label>
+                                    <input type="radio" id="star3" name="rating" value="3" onclick="setRating(3)">
+                                    <label for="star3" title="3">★</label>
+                                    <input type="radio" id="star2" name="rating" value="2" onclick="setRating(2)">
+                                    <label for="star2" title="2">★</label>
+                                    <input type="radio" id="star1" name="rating" value="1" onclick="setRating(1)">
+                                    <label for="star1" title="1">★</label>
+                                </div>
+                            </div>
+
+                            <!-- 評価を登録ボタン -->
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="submitRating()">
+                                    評価を登録
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- レコメンデーションセクション -->
+        <div class="mt-5">
+            <h2>あなたにおすすめのワイン</h2>
+            <div id="recommendations"></div>
+        </div>
+
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedRating = 0;
+        let preferencesChart = null;
+        let selectedWineChart = null;
+
+        // DOMContentLoaded時の処理
+        document.addEventListener('DOMContentLoaded', async () => {
+            const searchInput = document.getElementById('wineSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', debounceSearch);
+            }
+
+            // イベントリスナーの初期化
+            initializeStarRating();
+
+            // データの読み込み
+            await loadPreferences();
+            await loadRecommendations();
+            await loadRatedWines();
+        });
+
+        // 検索のデバウンス処理
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 検索処理
+        const debounceSearch = debounce(async (e) => {
+            const searchInput = document.getElementById('wineSearch');
+            const searchTerm = e.target.value;
+            if (searchTerm.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/search_wines_by_name?q=${encodeURIComponent(searchTerm)}`);
+                if (!response.ok) {
+                    throw new Error('検索に失敗しました');
+                }
+                
+                const wines = await response.json();
+                const resultsDiv = document.getElementById('searchResults');
+                resultsDiv.innerHTML = '';
+                
+                if (wines.length === 0) {
+                    resultsDiv.innerHTML = '<div class="no-results">該当するワインが見つかりませんでした</div>';
+                    return;
+                }
+
+                resultsDiv.className = 'search-results';
+                wines.forEach(wine => {
+                    const wineType = getWineType(wine);
+                    const div = document.createElement('div');
+                    div.className = 'search-result';
+                    div.innerHTML = `
+                        <span class="wine-name">${wine.name}</span>
+                        <div class="wine-details">
+                            <span class="wine-type-badge ${wineType}">${capitalizeFirstLetter(wineType)}</span>
+                            ${wine.vintage ? `<span class="vintage-badge">${wine.vintage}年</span>` : ''}
+                            <span class="variety-badge">${formatVarieties(wine)}</span>
+                        </div>
+                    `;
+                    div.addEventListener('click', async () => {
+                        document.getElementById('wineSearch').value = wine.name;
+                        try {
+                            const response = await fetch(`/get_wine/${wine.id}`);
+                            if (!response.ok) {
+                                throw new Error('ワインの取得に失敗しました');
+                            }
+                            const wineDetails = await response.json();
+                            displaySelectedWine(wineDetails);
+                            resultsDiv.innerHTML = '';
+                            const ratingSection = document.getElementById('ratingForm');
+                            if (ratingSection) {
+                                ratingSection.style.display = 'block';
+                                ratingSection.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        } catch (error) {
+                            console.error('Error fetching wine details:', error);
+                            alert('ワインの詳細情報の取得に失敗しました');
+                        }
+                    });
+                    resultsDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Error searching wines:', error);
+                const resultsDiv = document.getElementById('searchResults');
+                resultsDiv.innerHTML = '<div class="error-message">検索中にエラーが発生しました</div>';
+            }
+        }, 300);
+
+        // レコメンドされたワインを選択
+        function selectWineFromRecommendation(wine) {
+            // 評価セクションまでスクロール
+            const ratingSection = document.getElementById('ratingForm');
+            if (ratingSection) {
+                ratingSection.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // 選択されたワインの情報を表示
+            displaySelectedWine(wine);
+
+            // 評価フォームをリセット
+            resetRating();
+        }
+
+        // 選択されたワインの表示
+        function displaySelectedWine(wine) {
+            const selectedWineInfo = document.getElementById('selectedWineInfo');
+            if (!selectedWineInfo) return;
+
+            // 既存のチャートを破棄
+            if (selectedWineChart instanceof Chart) {
+                selectedWineChart.destroy();
+            }
+
+            // ワイン情報の表示を更新
+            selectedWineInfo.innerHTML = `
+                <div class="selected-wine-card">
+                    <div class="wine-badges mb-2">
+                        <div class="wine-type-badge ${wine.wine_type?.toLowerCase() || 'other'}">${capitalizeFirstLetter(wine.wine_type || 'other')}</div>
+                        ${wine.vintage ? `<div class="vintage-badge">${wine.vintage}年</div>` : ''}
+                    </div>
+                    <h4>${wine.name}</h4>
+                    <div class="wine-details">
+                        <p>品種: ${formatVarieties(wine)}</p>
+                        <p>価格: ${wine.price ? `¥${wine.price.toLocaleString()}` : '不明'}</p>
+                    </div>
+                    <div class="wine-chart-container">
+                        <canvas id="selectedWineChart"></canvas>
+                    </div>
+                </div>
+            `;
+
+            // レーダーチャートを描画
+            const ctx = document.getElementById('selectedWineChart')?.getContext('2d');
+            if (ctx) {
+                selectedWineChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['酸味', 'タンニン', 'ボディ', '甘さ'],
+                        datasets: [{
+                            label: 'ワインの特徴',
+                            data: [wine.acidity, wine.tannin, wine.body, wine.sweetness],
+                            backgroundColor: getChartBackgroundColor(wine.wine_type),
+                            borderColor: getChartBorderColor(wine.wine_type),
+                            pointBackgroundColor: getChartBorderColor(wine.wine_type),
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: getChartBorderColor(wine.wine_type)
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                angleLines: { display: true },
+                                suggestedMin: 0,
+                                suggestedMax: 5,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 選択されたワインのIDを保存
+            document.getElementById('selectedWineId').value = wine.id;
+
+            // 評価フォームを表示
+            const ratingForm = document.getElementById('ratingForm');
+            if (ratingForm) {
+                ratingForm.style.display = 'block';
+            }
+        }
+
+        // レコメンドされたワインを選択
+        function selectWineFromRecommendation(wine) {
+            // 評価セクションまでスクロール
+            const ratingSection = document.getElementById('ratingForm');
+            if (ratingSection) {
+                ratingSection.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // 選択されたワインの情報を表示
+            displaySelectedWine(wine);
+
+            // 評価フォームをリセット
+            resetRating();
+        }
+
+        // 選択されたワインの表示
+        function displaySelectedWine(wine) {
+            const selectedWineInfo = document.getElementById('selectedWineInfo');
+            if (!selectedWineInfo) return;
+
+            // 既存のチャートを破棄
+            if (selectedWineChart instanceof Chart) {
+                selectedWineChart.destroy();
+            }
+
+            // ワイン情報の表示を更新
+            selectedWineInfo.innerHTML = `
+                <div class="selected-wine-card">
+                    <div class="wine-badges mb-2">
+                        <div class="wine-type-badge ${wine.wine_type?.toLowerCase() || 'other'}">${capitalizeFirstLetter(wine.wine_type || 'other')}</div>
+                        ${wine.vintage ? `<div class="vintage-badge">${wine.vintage}年</div>` : ''}
+                    </div>
+                    <h4>${wine.name}</h4>
+                    <div class="wine-details">
+                        <p>品種: ${formatVarieties(wine)}</p>
+                        <p>価格: ${wine.price ? `¥${wine.price.toLocaleString()}` : '不明'}</p>
+                    </div>
+                    <div class="wine-chart-container">
+                        <canvas id="selectedWineChart"></canvas>
+                    </div>
+                </div>
+            `;
+
+            // レーダーチャートを描画
+            const ctx = document.getElementById('selectedWineChart')?.getContext('2d');
+            if (ctx) {
+                selectedWineChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['酸味', 'タンニン', 'ボディ', '甘さ'],
+                        datasets: [{
+                            label: 'ワインの特徴',
+                            data: [wine.acidity, wine.tannin, wine.body, wine.sweetness],
+                            backgroundColor: getChartBackgroundColor(wine.wine_type),
+                            borderColor: getChartBorderColor(wine.wine_type),
+                            pointBackgroundColor: getChartBorderColor(wine.wine_type),
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: getChartBorderColor(wine.wine_type)
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            r: {
+                                angleLines: { display: true },
+                                suggestedMin: 0,
+                                suggestedMax: 5,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 選択されたワインのIDを保存
+            document.getElementById('selectedWineId').value = wine.id;
+
+            // 評価フォームを表示
+            const ratingForm = document.getElementById('ratingForm');
+            if (ratingForm) {
+                ratingForm.style.display = 'block';
+            }
+        }
+
+        // レコメンドの表示
+        function displayRecommendations(recommendations) {
+            const container = document.getElementById('recommendations');
+            if (!container) return;
+
+            container.innerHTML = '';
+            
+            // ワインタイプの順序を定義
+            const wineTypes = ['red', 'white', 'sparkling', 'other'];
+            
+            // 各ワインタイプごとのレコメンデーションを表示
+            wineTypes.forEach(wineType => {
+                const wines = recommendations[wineType] || [];
+                
+                const typeContainer = document.createElement('div');
+                typeContainer.className = `recommendation-type ${wineType}`;
+                
+                const typeHeader = document.createElement('h3');
+                typeHeader.textContent = getWineTypeLabel(wineType);
+                typeContainer.appendChild(typeHeader);
+
+                if (wines.length === 0) {
+                    const noRecommendation = document.createElement('p');
+                    noRecommendation.className = 'text-muted';
+                    noRecommendation.textContent = 'レコメンデーションはありません';
+                    typeContainer.appendChild(noRecommendation);
+                } else {
+                    const wineList = document.createElement('div');
+                    wineList.className = 'wine-list';
+
+                    wines.forEach(wine => {
+                        const chartId = `chart_${wine.id}_${Date.now()}`;
+                        const card = document.createElement('div');
+                        card.className = `wine-card wine-type-${wineType}`;
+                        card.innerHTML = `
+                            <div class="wine-badges">
+                                <div class="wine-type-badge ${wineType}">${capitalizeFirstLetter(wineType)}</div>
+                                ${wine.vintage ? `<div class="vintage-badge">${wine.vintage}年</div>` : ''}
+                            </div>
+                            <h4>${wine.name}</h4>
+                            <div class="wine-info">
+                                <div>品種: ${formatVarieties(wine)}</div>
+                                <div>価格: ${wine.price ? `¥${wine.price.toLocaleString()}` : '不明'}</div>
+                                <div>類似度: ${(wine.similarity * 100).toFixed(1)}%</div>
+                            </div>
+                            <div class="wine-chart-container">
+                                <canvas id="${chartId}"></canvas>
+                            </div>
+                            <div class="button-group">
+                                <button class="btn btn-outline-primary" onclick="selectWineFromRecommendation(${JSON.stringify(wine).replace(/"/g, '&quot;')})">
+                                    評価する
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="searchWineOnline('${wine.name} ${wine.vintage || ''} ${formatVarieties(wine)}')">
+                                    ネットで検索
+                                </button>
+                            </div>
+                        `;
+                        wineList.appendChild(card);
+
+                        requestAnimationFrame(() => {
+                            const ctx = document.getElementById(chartId)?.getContext('2d');
+                            if (ctx) {
+                                new Chart(ctx, {
+                                    type: 'radar',
+                                    data: {
+                                        labels: ['酸味', 'タンニン', 'ボディ', '甘さ'],
+                                        datasets: [{
+                                            label: 'ワインの特徴',
+                                            data: [wine.acidity, wine.tannin, wine.body, wine.sweetness],
+                                            backgroundColor: getChartBackgroundColor(wine.wine_type),
+                                            borderColor: getChartBorderColor(wine.wine_type),
+                                            pointBackgroundColor: getChartBorderColor(wine.wine_type),
+                                            pointBorderColor: '#fff',
+                                            pointHoverBackgroundColor: '#fff',
+                                            pointHoverBorderColor: getChartBorderColor(wine.wine_type)
+                                        }]
+                                    },
+                                    options: {
+                                        scales: {
+                                            r: {
+                                                angleLines: { display: true },
+                                                suggestedMin: 0,
+                                                suggestedMax: 5,
+                                                ticks: {
+                                                    stepSize: 1
+                                                }
+                                            }
+                                        },
+                                        plugins: {
+                                            legend: {
+                                                display: false
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    });
+                    typeContainer.appendChild(wineList);
+                }
+                container.appendChild(typeContainer);
+            });
+        }
+
+        // 好みのレーダーチャートの初期化
+        function initPreferencesChart(data) {
+            const ctx = document.getElementById('preferencesChart').getContext('2d');
+            if (preferencesChart) {
+                preferencesChart.destroy();
+            }
+            
+            preferencesChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['酸味', 'タンニン', 'ボディ', '甘み'],
+                    datasets: [{
+                        label: 'あなたの好み',
+                        data: [
+                            data.acidity || 0,
+                            data.tannin || 0,
+                            data.body || 0,
+                            data.sweetness || 0
+                        ],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        pointBackgroundColor: 'rgb(255, 99, 132)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(255, 99, 132)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 好みとレコメンデーションの読み込み
+        async function loadPreferences() {
+            try {
+                const response = await fetch('/get_preferences');
+                if (!response.ok) {
+                    throw new Error('好みの取得に失敗しました');
+                }
+                const data = await response.json();
+                
+                // レーダーチャートを初期化
+                if (data.preferences) {
+                    initPreferencesChart(data.preferences);
+                }
+            } catch (error) {
+                console.error('Error loading preferences:', error);
+                alert('好みの読み込みに失敗しました: ' + error.message);
+            }
+        }
+
+        // レコメンデーションの読み込み
+        async function loadRecommendations() {
+            try {
+                const response = await fetch('/get_recommendations');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayRecommendations(data);
+                } else {
+                    throw new Error('レコメンデーションの読み込みに失敗しました');
+                }
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        }
+
+        // 評価済みワインの読み込み
+        async function loadRatedWines() {
+            try {
+                const response = await fetch('/get_rated_wines');
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '評価済みワインの取得に失敗しました');
+                }
+                const ratedWines = await response.json();
+                if (Array.isArray(ratedWines)) {
+                    displayRatedWines(ratedWines);
+                } else {
+                    throw new Error('不正なレスポンス形式です');
+                }
+            } catch (error) {
+                console.error('Error loading rated wines:', error);
+                alert('評価済みワインの読み込みに失敗しました: ' + error.message);
+            }
+        }
+
+        // 評価済みワインの表示
+        function displayRatedWines(ratedWines) {
+            const container = document.getElementById('ratedWinesList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (ratedWines.length === 0) {
+                container.innerHTML = '<p class="text-muted">まだ評価したワインはありません</p>';
+                return;
+            }
+
+            ratedWines.forEach(wine => {
+                const wineType = getWineType(wine);
+                const card = document.createElement('div');
+                card.className = `wine-card wine-type-${wineType}`;
+                card.innerHTML = `
+                    <div class="wine-badges">
+                        <div class="wine-type-badge ${wineType}">${getWineTypeLabel(wineType)}</div>
+                        ${wine.vintage ? `<div class="vintage-badge">${wine.vintage}年</div>` : ''}
+                    </div>
+                    <h4>${wine.name}</h4>
+                    <div class="wine-info">
+                        <div>品種: ${formatVarieties(wine)}</div>
+                        <div>評価: ${'★'.repeat(wine.rating)}${'☆'.repeat(5-wine.rating)}</div>
+                        <div>評価日: ${formatDate(wine.rated_at)}</div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-outline-primary" onclick="searchWineOnline('${wine.name} ${wine.vintage || ''} ${formatVarieties(wine)}')">
+                            ネットで検索
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="editRating(${wine.id}, ${wine.rating})">
+                            編集
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteRating(${wine.id})">
+                            削除
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 星評価の初期化
+        function initializeStarRating() {
+            document.querySelectorAll('.star').forEach(star => {
+                star.addEventListener('click', function() {
+                    selectedRating = parseInt(this.dataset.rating);
+                    updateStars();
+                });
+            });
+        }
+
+        // 星評価の更新
+        function updateStars() {
+            document.querySelectorAll('.star').forEach((star, index) => {
+                star.textContent = index < selectedRating ? '★' : '☆';
+            });
+        }
+
+        // 評価の設定
+        function setRating(value) {
+            selectedRating = value;
+        }
+
+        // 評価の送信
+        async function submitRating() {
+            const wineId = document.getElementById('selectedWineId').value;
+            if (!wineId || !selectedRating) {
+                alert('ワインを選択して評価を入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/rate_wine', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        wine_id: parseInt(wineId),
+                        rating: selectedRating
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '評価の登録に失敗しました');
+                }
+
+                // 成功メッセージを表示
+                alert('評価を保存しました');
+
+                // フォームをリセット
+                resetRating();
+                document.getElementById('selectedWineId').value = '';
+                document.getElementById('selectedWineInfo').innerHTML = '<p class="text-muted">評価するワインを選択してください</p>';
+                document.getElementById('ratingForm').style.display = 'none';
+
+                // データを再読み込み
+                await loadPreferences();
+                await loadRecommendations();
+                await loadRatedWines();
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+            }
+        }
+
+        // 評価のリセット
+        function resetRating() {
+            selectedRating = 0;
+            const stars = document.querySelectorAll('.star-rating input');
+            stars.forEach(star => star.checked = false);
+        }
+
+        // 評価の編集
+        async function editRating(wineId, currentRating) {
+            const wine = await fetch(`/get_wine/${wineId}`).then(res => res.json());
+            displaySelectedWine(wine);
+            selectedRating = currentRating;
+            updateStars();
+            document.getElementById('ratingForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 評価の削除
+        async function deleteRating(wineId) {
+            if (!confirm('この評価を削除してもよろしいですか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/delete_rating/${wineId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('評価の削除に失敗しました');
+                }
+
+                // 評価履歴を再読み込み
+                await loadRatedWines();
+                // 好みの分析を更新
+                await loadPreferences();
+                // レコメンデーションを更新
+                await loadRecommendations();
+
+                alert('評価を削除しました');
+            } catch (error) {
+                console.error('Error deleting rating:', error);
+                alert('評価の削除に失敗しました');
+            }
+        }
+
+        // 品種情報のフォーマット
+        function formatVarieties(wine) {
+            const varieties = [];
+            if (wine.variety) varieties.push(wine.variety);
+            if (wine.variety_sub1) varieties.push(wine.variety_sub1);
+            if (wine.variety_sub2) varieties.push(wine.variety_sub2);
+            return varieties.length > 0 ? varieties.join(', ') : '不明';
+        }
+
+        // 文字列の先頭を大文字に
+        function capitalizeFirstLetter(string) {
+            if (!string) return 'Other';
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // ワインタイプを取得（未定義の場合はotherを返す）
+        function getWineType(wine) {
+            return wine.wine_type || 'other';
+        }
+
+        // 日付のフォーマット
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // オンラインでワインを検索
+        function searchWineOnline(searchTerm) {
+            const encodedSearch = encodeURIComponent(searchTerm);
+            // 複数の検索エンジンで検索できるようにする
+            window.open(`https://www.google.com/search?q=${encodedSearch}+wine`, '_blank');
+            window.open(`https://www.wine-searcher.com/find/${encodedSearch}`, '_blank');
+        }
+
+        // レーダーチャートの色設定
+        function getChartBackgroundColor(wineType) {
+            switch(wineType?.toLowerCase()) {
+                case 'red':
+                    return 'rgba(220, 100, 100, 0.2)';
+                case 'white':
+                    return 'rgba(255, 223, 128, 0.2)';
+                case 'sparkling':
+                    return 'rgba(173, 216, 230, 0.2)';
+                default:
+                    return 'rgba(169, 169, 169, 0.2)';
+            }
+        }
+
+        function getChartBorderColor(wineType) {
+            switch(wineType?.toLowerCase()) {
+                case 'red':
+                    return '#dc6464';
+                case 'white':
+                    return '#b39a3d';
+                case 'sparkling':
+                    return '#4d7c8a';
+                default:
+                    return '#696969';
+            }
+        }
+
+        // ワインタイプのラベルを取得
+        function getWineTypeLabel(type) {
+            const labels = {
+                'red': '赤ワイン',
+                'white': '白ワイン',
+                'sparkling': 'スパークリング',
+                'rose': 'ロゼ',
+                'dessert': 'デザートワイン',
+                'other': 'その他'
+            };
+            return labels[type.toLowerCase()] || 'その他';
+        }
+    </script>
+</body>
+</html>
