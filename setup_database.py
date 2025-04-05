@@ -99,14 +99,14 @@ def load_from_csv():
                 
                 # Extract wine type
                 wine_type = 'red'  # Default
-                if 'wine_type' in row and pd.notna(row['wine_type']):
-                    wine_type = row['wine_type'].lower()
+                if 'type' in row and pd.notna(row['type']):
+                    wine_type = row['type'].lower()
                 
                 # Extract price
                 price = 0
                 if 'price' in row and pd.notna(row['price']):
                     try:
-                        price = int(row['price'])
+                        price = int(row['price']/10)
                     except:
                         price = 0
                 
