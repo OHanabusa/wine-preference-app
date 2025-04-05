@@ -38,11 +38,11 @@ def load_from_csv():
               f"{len(other_wines)} other wines")
         
         # 各種類からワインを選択
-        selected_red = red_wines.sample(min(1000, len(red_wines)))
-        selected_white = white_wines.sample(min(500, len(white_wines)))
-        selected_sparkling = sparkling_wines.sample(min(200, len(sparkling_wines)))
-        selected_rose = rose_wines.sample(min(100, len(rose_wines)))
-        selected_other = other_wines.sample(min(200, len(other_wines)))
+        selected_red = red_wines
+        selected_white = white_wines
+        selected_sparkling = sparkling_wines
+        selected_rose = rose_wines
+        selected_other = other_wines
         
         # 選択したワインを結合
         df_combined = pd.concat([selected_red, selected_white, selected_sparkling, selected_rose, selected_other])
