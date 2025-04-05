@@ -4,6 +4,151 @@ This script explicitly creates tables and sample data.
 """
 from app import app, db, Wine, UserPreference
 from datetime import datetime
+import pandas as pd
+import os
+
+def load_from_csv():
+    """Load wine data from the wine_info.csv file"""
+    csv_path = '/Users/oto/CascadeProjects/windsurf-project/archive/wine_info.csv'
+    
+    # For deployment, we need to check if the file exists in the deployment environment
+    if not os.path.exists(csv_path):
+        print(f"CSV file not found at {csv_path}, using sample data instead")
+        return False
+        
+    try:
+        print(f"Loading wine data from {csv_path}...")
+        # Read the CSV file
+        df = pd.read_csv(csv_path, encoding='utf-8')
+        
+        # Limit to 1000 rows to avoid memory issues
+        df = df.head(1000)
+        
+        # Remove duplicate wines by name
+        df = df.drop_duplicates(subset=['name'])
+        
+        print(f"Loaded {len(df)} wines from CSV file")
+        
+        # Convert dataframe rows to Wine objects
+        for _, row in df.iterrows():
+            try:
+                # Extract data from row
+                name = row['name'] if 'name' in row and pd.notna(row['name']) else ''
+                variety = row[3] if len(row) > 3 and pd.notna(row[3]) else ''
+                variety_sub1 = row[4] if len(row) > 4 and pd.notna(row[4]) else ''
+                variety_sub2 = row[5] if len(row) > 5 and pd.notna(row[5]) else ''
+                
+                # Extract vintage as integer
+                vintage = 0
+                if 'vintage' in row and pd.notna(row['vintage']):
+                    try:
+                        vintage = int(row['vintage'])
+                    except:
+                        vintage = 0
+                
+                # Extract wine type
+                wine_type = 'red'  # Default
+                if 'wine_type' in row and pd.notna(row['wine_type']):
+                    wine_type = row['wine_type'].lower()
+                
+                # Extract price
+                price = 0
+                if 'price' in row and pd.notna(row['price']):
+                    try:
+                        price = int(row['price'])
+                    except:
+                        price = 0
+                
+                # Handle taste attributes
+                acidity = 3.0  # Default values
+                tannin = 3.0
+                body = 3.0
+                sweetness = 1.0
+                
+                # Map SWEET values to numeric
+                if 'SWEET' in str(row.get('sweetness', '')):
+                    sweetness_str = str(row['sweetness'])
+                    if 'SWEET1' in sweetness_str:
+                        sweetness = 1.0
+                    elif 'SWEET2' in sweetness_str:
+                        sweetness = 2.0
+                    elif 'SWEET3' in sweetness_str:
+                        sweetness = 3.0
+                    elif 'SWEET4' in sweetness_str:
+                        sweetness = 4.0
+                    elif 'SWEET5' in sweetness_str:
+                        sweetness = 5.0
+                
+                # Map other attributes
+                if 'ACIDITY' in str(row.get('acidity', '')):
+                    acidity_str = str(row['acidity'])
+                    if 'ACIDITY1' in acidity_str:
+                        acidity = 1.0
+                    elif 'ACIDITY2' in acidity_str:
+                        acidity = 2.0
+                    elif 'ACIDITY3' in acidity_str:
+                        acidity = 3.0
+                    elif 'ACIDITY4' in acidity_str:
+                        acidity = 4.0
+                    elif 'ACIDITY5' in acidity_str:
+                        acidity = 5.0
+                
+                if 'BODY' in str(row.get('body', '')):
+                    body_str = str(row['body'])
+                    if 'BODY1' in body_str:
+                        body = 1.0
+                    elif 'BODY2' in body_str:
+                        body = 2.0
+                    elif 'BODY3' in body_str:
+                        body = 3.0
+                    elif 'BODY4' in body_str:
+                        body = 4.0
+                    elif 'BODY5' in body_str:
+                        body = 5.0
+                
+                if 'TANNIN' in str(row.get('tannin', '')):
+                    tannin_str = str(row['tannin'])
+                    if 'TANNIN1' in tannin_str:
+                        tannin = 1.0
+                    elif 'TANNIN2' in tannin_str:
+                        tannin = 2.0
+                    elif 'TANNIN3' in tannin_str:
+                        tannin = 3.0
+                    elif 'TANNIN4' in tannin_str:
+                        tannin = 4.0
+                    elif 'TANNIN5' in tannin_str:
+                        tannin = 5.0
+                
+                # Create Wine object
+                wine = Wine(
+                    name=name,
+                    variety=variety,
+                    variety_sub1=variety_sub1,
+                    variety_sub2=variety_sub2,
+                    vintage=vintage,
+                    wine_type=wine_type,
+                    price=price,
+                    acidity=acidity,
+                    tannin=tannin,
+                    body=body,
+                    sweetness=sweetness
+                )
+                
+                # Add to session
+                db.session.add(wine)
+                
+            except Exception as e:
+                print(f"Error processing wine row: {e}")
+                continue
+        
+        # Commit changes
+        db.session.commit()
+        print("CSV data imported successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"Error loading wine data from CSV: {e}")
+        return False
 
 def create_sample_data():
     """Set up the database with sample data for deployment and testing."""
@@ -14,9 +159,14 @@ def create_sample_data():
         print("Creating all tables...")
         db.create_all()
         
-        print("Adding sample wine data...")
-        # Create sample wine data based on real entries from wine_info.csv
-        sample_wines = [
+        # Try to load from CSV first
+        csv_loaded = load_from_csv()
+        
+        # If CSV loading failed, use sample data
+        if not csv_loaded:
+            print("Adding sample wine data...")
+            # Create sample wine data based on real entries from wine_info.csv
+            sample_wines = [
             # Japanese wines
             Wine(name="シャトー・メルシャン 甲州きいろ香 2022", variety="甲州", vintage=2022, 
                  wine_type="white", price=2500, acidity=3.8, tannin=1.0, body=2.0, sweetness=1.0),
@@ -88,3 +238,20 @@ def create_sample_data():
 
 if __name__ == "__main__":
     create_sample_data()
+    
+# Export additional function for direct CSV loading
+def load_csv_data():
+    """Function to directly load CSV data without dropping tables"""
+    with app.app_context():
+        # Check if wines already exist
+        existing_count = Wine.query.count()
+        print(f"Database currently has {existing_count} wines")
+        
+        if existing_count == 0:
+            # Load from CSV
+            if not load_from_csv():
+                # Fall back to sample data if CSV loading fails
+                print("Adding sample wines instead...")
+                create_sample_data()
+        else:
+            print("Database already contains wines, skipping import")
